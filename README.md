@@ -113,3 +113,9 @@ numero -> 001122
   "groupName": "Grupo-bot-wsp-demo",
 "message": "el mensaje que quieran"
 ```
+
+
+## rutas 
+
+* post /api/whatsapp/send-message 
+* post /api/whatsapp/send-message-group

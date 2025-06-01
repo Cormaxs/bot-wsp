@@ -9,10 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use("/", router)
-app.use("/home", (req,res)=>{
-    res.send("funciona")
-})
- await IniciarWsp();
+await IniciarWsp();
 
 app.listen(PORT, () => {
     console.log(`Servidor Express escuchando en el puerto ${PORT}`);
