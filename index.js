@@ -12,7 +12,7 @@ app.use("/", router)
 app.use("/home", (req,res)=>{
     res.send("funciona")
 })
- IniciarWsp();
+ await IniciarWsp();
 
 app.listen(PORT, () => {
     console.log(`Servidor Express escuchando en el puerto ${PORT}`);
