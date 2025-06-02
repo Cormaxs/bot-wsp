@@ -1,33 +1,32 @@
-import qrcode from 'qrcode-terminal'; // No necesitas '{ error }' aquí si 'error' no es un export de qrcode-terminal
+// iniciar-wsp.js
+import qrcode from 'qrcode-terminal';
 import pkg from 'whatsapp-web.js';
 
-// Hacemos el cliente global
 let client;
+let isClientReady = false; // <-- AGREGADO: Variable para indicar si el cliente está listo
 
 export async function IniciarWsp() {
     console.log('1. Iniciando IniciarWsp()...');
     const { Client, LocalAuth } = pkg;
 
-    // Nuevo cliente de wsp
     client = new Client({
-        authStrategy: new LocalAuth(), // Mantiene la sesión iniciada guardándola en local
-        puppeteer: { // ¡Esto es CRUCIAL para el entorno sin GUI!
-            headless: true, // Asegura que el navegador se ejecute sin interfaz
+        authStrategy: new LocalAuth(),
+        puppeteer: {
+            headless: true,
             args: [
-                '--no-sandbox', // Necesario si ejecutas como root o en algunos entornos
-                '--disable-setuid-sandbox', // Otra precaución de seguridad
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
                 '--disable-extensions',
-                '--disable-gpu', // Deshabilita el uso de la GPU (útil en servidores sin GPU)
-                '--disable-dev-shm-usage', // Resuelve problemas de memoria compartida
-                '--no-zygote', // Puede ayudar con el lanzamiento del proceso
-                '--single-process' // Otra opción para la estabilidad del proceso
+                '--disable-gpu',
+                '--disable-dev-shm-usage',
+                '--no-zygote',
+                '--single-process'
             ]
         }
     });
 
     console.log('2. Cliente de WhatsApp inicializado con configuración de Puppeteer.');
 
-    // Genera QR
     client.on('qr', qr => {
         console.log('3. Evento "qr" recibido.');
         if (qr && typeof qr === 'string' && qr.length > 0) {
@@ -44,27 +43,23 @@ export async function IniciarWsp() {
         }
     });
 
-    // Avisa de conexión exitosa
     client.on('ready', () => {
         console.log('7. Conexión exitosa. El bot está en línea.');
-        // setupMessageListener() // Escucho todo lo que entra
+        isClientReady = true; // <-- AGREGADO: Marcar el cliente como listo
     });
 
-    // Manejo de errores de autenticación
     client.on('auth_failure', msg => {
         console.error('8. Fallo en la autenticación:', msg);
-        // Aquí podrías añadir lógica para limpiar la sesión guardada si es necesario
-        // Por ejemplo: fs.rmSync('./.wwebjs_auth', { recursive: true, force: true });
+        isClientReady = false; // <-- AGREGADO: Marcar como no listo en caso de fallo
     });
 
-    // Manejo de desconexiones
     client.on('disconnected', reason => {
         console.warn('9. Cliente desconectado:', reason);
-        // Puedes intentar reiniciar el cliente aquí
+        isClientReady = false; // <-- AGREGADO: Marcar como no listo si se desconecta
+        // Puedes implementar aquí un mecanismo de reconexión si lo deseas
         // IniciarWsp();
     });
 
-    // Intenta inicializar el cliente
     console.log('10. Llamando a client.initialize()...');
     client.initialize()
         .then(() => {
@@ -74,14 +69,20 @@ export async function IniciarWsp() {
             console.error('12. ERROR GRAVE al inicializar el cliente de WhatsApp:', err);
             console.error('13. Trace del error:', err.stack);
             console.error('Posibles causas: faltan dependencias de Chromium, problemas de permisos, falta de recursos.');
+            isClientReady = false; // <-- AGREGADO: Marcar como no listo en caso de error
         });
 }
 
-// Exporta la instancia del cliente
+// Exporta la instancia del cliente y su estado
 export const getClient = () => {
     if (!client) {
         console.warn('14. Advertencia: Se intentó obtener el cliente de WhatsApp antes de inicializarlo.');
-        throw new Error("Error, cliente no verificado"); // Cambié 'error' a 'Error' para ser un tipo de error estándar
+        throw new Error("Error, cliente no verificado");
     }
     return client;
+};
+
+// <-- AGREGADO: Nueva función para obtener el estado de listo
+export const isClientAuthenticated = () => {
+    return isClientReady;
 };
